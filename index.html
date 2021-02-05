@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Waffelzeit</title>
+    <link rel=icon href=waffle.png sizes="16x16" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+</head>
+<style type="text/css">
+    body {
+        font-family: sans-serif;
+        font-size: x-large;
+    }
+
+    div {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    label {
+        margin-left: 0.4rem;
+    }
+
+    button {
+        width: 6rem;
+        display: block;
+        margin: 0px auto 0px auto;
+        font-size: x-large;
+    }
+
+    progress,
+    button,
+    input {
+        margin-top: 1rem;
+    }
+
+    progress,
+    input[type=range] {
+        width: calc(100% - 3rem);
+        height: 2rem;
+    }
+</style>
+
+<body>
+    <datalist id="tickmarks">
+        <option value="0" label="0"></option>
+        <option value="15"></option>
+        <option value="30"></option>
+        <option value="45"></option>
+        <option value="60" label="60"></option>
+        <option value="75"></option>
+        <option value="90"></option>
+        <option value="105"></option>
+        <option value="120" label="120"></option>
+    </datalist>
+    <div>
+        <input id="slider1" list="tickmarks" type="range" min="3" max="120" value="5" step="1"
+            onchange="changeLabel('slider1')" />
+        <label for="slider1">5</label>
+    </div>
+    <div>
+        <input id="slider2" list="tickmarks" type="range" min="3" max="120" value="45" step="1"
+            onchange="changeLabel('slider2')" />
+        <label for="slider2">45</label>
+    </div>
+    <div>
+        <button id="toggle" type="button" onclick="toggleSound()">Start</button>
+    </div>
+    <div>
+        <progress id="progress" value="0" max="0"></progress>
+    </div>
+</body>
+
+<script>
+    let bIsActive = false;
+    let bFirstSlider = true;
+    const iProgressRate = 20;
+    const aInterval = [];
+    const aTimeouts = [];
+    const oAlarm = new Audio("alarm.mp3");
+
+    const oButton = document.getElementById("toggle");
+    const oProgress = document.getElementById("progress");
+    const oSlider1 = document.getElementById("slider1");
+    const oSlider2 = document.getElementById("slider2");
+
+    function playSound() {
+        bFirstSlider = !bFirstSlider;
+        oProgress.value = 0
+        oProgress.max = (bFirstSlider ? oSlider1 : oSlider2).value * iProgressRate;
+        oAlarm.play();
+    }
+
+    function progress() {
+        oProgress.value = oProgress.value + 1;
+    }
+
+    function getTimeouts() {
+        return {
+            slider1: parseInt(oSlider1.value) * 1000,
+            slider2: parseInt(oSlider2.value) * 1000
+        };
+    }
+
+    function start() {
+        const oTimeouts = getTimeouts();
+        oProgress.max = oSlider1.value * iProgressRate;
+        const iTotal = oTimeouts.slider1 + oTimeouts.slider2;
+        aTimeouts[0] = setTimeout(playSound, oTimeouts.slider1)
+        aInterval[0] = setInterval(playSound, iTotal);
+        aTimeouts[1] = setTimeout(() => {
+            aInterval[1] = setInterval(playSound, iTotal);
+        }, oTimeouts.slider1);
+        aInterval[2] = setInterval(progress, 1000 / iProgressRate);
+    }
+
+    function stop() {
+        aInterval
+            .forEach((oInterval) => {
+                clearInterval(oInterval);
+            });
+        aTimeouts
+            .forEach((oInterval) => {
+                clearInterval(oInterval);
+            });
+        oProgress.value = 0;
+        oProgress.max = 0;
+    }
+
+    function toggleSound() {
+        bIsActive = !bIsActive;
+        oSlider1.disabled = bIsActive;
+        oSlider2.disabled = bIsActive;
+
+        if (bIsActive) {
+            oButton.textContent = "Stop";
+            start();
+        } else {
+            oButton.textContent = "Start";
+            stop();
+        }
+    }
+
+    function changeLabel(sId) {
+        const oSlider = document.getElementById(sId);
+        oSlider.labels[0].textContent = oSlider.value;
+    }
+</script>
+
+</html>
